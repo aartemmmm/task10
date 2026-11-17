@@ -1,0 +1,64 @@
+name: Issue triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ github.event.issue.number }}
+      ISSUE_ID: ${{ github.event.issue.node_id }}
+      OWNER: ${{ github.repository_owner }}
+      MILESTONE_NUMBER: ${{ vars.SPRINT_MILESTONE_NUMBER }}
+    steps:
+      - name: Assign, label, and schedule the issue
+        id: sprint
+        run: |
+          : "${MILESTONE_NUMBER:?Set the sprint milestone number}"
+          endpoint="repos/$GITHUB_REPOSITORY/issues/$ISSUE"
+          issue_json=$(gh api "$endpoint")
+          if [ "$(jq '.assignees | length' <<< "$issue_json")" -eq 0 ]; then
+            gh api --method POST "$endpoint/assignees" -f "assignees[]=$OWNER" >/dev/null
+          fi
+          if [ "$(jq '.labels | length' <<< "$issue_json")" -eq 0 ]; then
+            gh api --method POST "$endpoint/labels" -f 'labels[]=tech-debt' >/dev/null
+          fi
+          milestone=$(jq -r --arg default "$MILESTONE_NUMBER" '.milestone.number // $default' <<< "$issue_json")
+          gh api --method PATCH "$endpoint" -F "milestone=$milestone" >/dev/null
+          due=$(gh api "repos/$GITHUB_REPOSITORY/milestones/$milestone" --jq '.due_on // empty')
+          : "${due:?Set a due date on the sprint milestone}"
+          date=${due:0:10}
+          echo "date=$date" >> "$GITHUB_OUTPUT"
+          marker='<!-- seminar-sprint-due -->'
+          comments=$(gh api --paginate "$endpoint/comments" --jq '.[].body')
+          if ! grep -Fq "$marker" <<< "$comments"; then
+            gh api --method POST "$endpoint/comments" -f "body=$marker"$'\n'"Срок по учебному спринту — $date." >/dev/null
+          fi
+      - name: Set the issue due date in GitHub Projects
+        if: vars.SEMINAR_PROJECT_ID != '' && vars.SEMINAR_DUE_FIELD_ID != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_ID: ${{ vars.SEMINAR_PROJECT_ID }}
+          FIELD_ID: ${{ vars.SEMINAR_DUE_FIELD_ID }}
+          DUE_DATE: ${{ steps.sprint.outputs.date }}
+        run: |
+          : "${GH_TOKEN:?Set PROJECT_TOKEN with permission to write to the project}"
+          item=$(gh api graphql -f query='
+            mutation($project: ID!, $issue: ID!) {
+              addProjectV2ItemById(input: {projectId: $project, contentId: $issue}) {
+                item { id }
+              }
+            }' -f project="$PROJECT_ID" -f issue="$ISSUE_ID" --jq .data.addProjectV2ItemById.item.id)
+          gh api graphql -f query='
+            mutation($project: ID!, $item: ID!, $field: ID!, $due: Date!) {
+              updateProjectV2ItemFieldValue(input: {
+                projectId: $project, itemId: $item, fieldId: $field, value: {date: $due}
+              }) { projectV2Item { id } }
+            }' -f project="$PROJECT_ID" -f item="$item" -f field="$FIELD_ID" -f due="$DUE_DATE" >/dev/null
