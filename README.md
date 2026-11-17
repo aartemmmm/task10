@@ -23,3 +23,11 @@ curl -sS -H 'Content-Type: application/json' \
 ```
 
 Ожидаемый ответ — `{"total":398,"email":"shopper@example.com"}`.
+
+При пустом email API возвращает HTTP 400 и `Email is required`. При адресе
+вроде `shopper` ответ тоже HTTP 400 с примером корректного адреса.
+Пробелы по краям корректного адреса убираются.
+
+```sh
+python -m pytest tests/test_checkout.py -q
+```
