@@ -8,7 +8,7 @@ def test_order_total_is_in_cents():
     assert order_total(199, 3) == 597
 
 
-@pytest.mark.parametrize("quantity", [-1, MAX_ORDER_QUANTITY + 1])
+@pytest.mark.parametrize("quantity", [-1, 0, MAX_ORDER_QUANTITY + 1])
 def test_out_of_range_quantity(quantity):
     with pytest.raises(ValueError, match="Quantity"):
         order_total(199, quantity)
