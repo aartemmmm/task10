@@ -1,0 +1,11 @@
+rules:
+  - id: python-avoid-eval
+    languages: [python]
+    message: Avoid dynamic evaluation in the shop server
+    severity: WARNING
+    pattern: eval(...)
+  - id: python-avoid-exec
+    languages: [python]
+    message: Avoid dynamic execution in the shop server
+    severity: WARNING
+    pattern: exec(...)
