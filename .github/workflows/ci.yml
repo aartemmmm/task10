@@ -107,3 +107,22 @@ jobs:
           name: shop-package
           path: release/*.whl
           if-no-files-found: error
+
+  sast:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep:1.123.0
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Scan Python source
+        run: |
+          semgrep scan --config ci/semgrep.yml --metrics=off --disable-version-check \
+            --error --json --output semgrep.json src
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: semgrep-report
+          path: semgrep.json
+          if-no-files-found: warn
