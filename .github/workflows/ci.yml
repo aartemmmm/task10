@@ -1,0 +1,62 @@
+name: Shop CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - run: python -m pip install -r requirements-ci.txt
+      - run: python -m build --no-isolation --wheel
+      - uses: actions/upload-artifact@v7
+        with:
+          name: built-wheel
+          path: dist/*.whl
+          if-no-files-found: error
+
+  lint:
+    name: Lint and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - run: python -m pip install -r requirements-ci.txt
+      - name: Ruff
+        id: ruff
+        continue-on-error: true
+        run: python -m ruff check src tests
+      - name: mypy
+        id: mypy
+        continue-on-error: true
+        run: python -m mypy src
+      - name: Report diagnostic outcomes
+        if: always()
+        env:
+          RUFF_OUTCOME: ${{ steps.ruff.outcome }}
+          MYPY_OUTCOME: ${{ steps.mypy.outcome }}
+        run: |
+          printf '### Необязательные проверки\n\n- Ruff: %s\n- mypy: %s\n' \
+            "$RUFF_OUTCOME" "$MYPY_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
