@@ -1,0 +1,40 @@
+name: Staging
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shop-staging
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify same commit
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy staging
+    if: github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ${{ vars.STAGING_RUNNER || 'ubuntu-latest' }}
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL || 'http://127.0.0.1:18080' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: shop-package
+          path: release
+      - name: Start the container and check health
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          STAGING_PORT: ${{ vars.STAGING_PORT || '18080' }}
+          STAGING_URL: ${{ vars.STAGING_URL || 'http://127.0.0.1:18080' }}
+        run: sh ci/deploy-staging.sh
