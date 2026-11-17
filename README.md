@@ -2,6 +2,12 @@
 
 Пять заданий на примере учебного интернет-магазина на Python.
 
+Работа выполнена индивидуально в GitHub. Изменения после начального
+коммита проходили через PR. На `main` включены защита и проверка Tests,
+в том числе для администратора. Замечания в PR оформлены как
+самопроверка. Одобрение второго человека в индивидуальной работе
+отсутствует.
+
 ## Запуск магазина
 
 Требуется Python 3.12 или новее. Установи зависимости в виртуальное окружение.
@@ -86,3 +92,23 @@ Semgrep проверяет исходный код и сохраняет `semgre
 Для автоматической записи даты в GitHub Projects нужны переменные
 `SEMINAR_PROJECT_ID`, `SEMINAR_DUE_FIELD_ID` и отдельный секрет
 `PROJECT_TOKEN` с правом записи в этот проект.
+
+## Результаты
+
+| Задание | Что показать |
+| --- | --- |
+| 1. Работа с Issue и PR | [Issue #1](https://github.com/aartemmmm/task10/issues/1), [реализация](https://github.com/aartemmmm/task10/pull/2), [тесты](https://github.com/aartemmmm/task10/pull/3), [инструкция](https://github.com/aartemmmm/task10/pull/4). Issue автоматически закрылась после третьего PR. |
+| 2. GitHub Actions | [Упавший CI](https://github.com/aartemmmm/task10/actions/runs/44045091245) и [успешный CI](https://github.com/aartemmmm/task10/actions/runs/44045158825). В первом прогоне тест на количество 0 упал. Во втором прошли 19 тестов и собрался wheel. |
+| 3. Релиз и hotfix | [v1.0.0](https://github.com/aartemmmm/task10/releases/tag/v1.0.0), [Issue #9](https://github.com/aartemmmm/task10/issues/9), [PR #10](https://github.com/aartemmmm/task10/pull/10), [v1.0.1](https://github.com/aartemmmm/task10/releases/tag/v1.0.1). |
+| 4. Конфликт | [PR #13](https://github.com/aartemmmm/task10/pull/13), [ветка merge](https://github.com/aartemmmm/task10/tree/demo/4-merge) и [ветка rebase](https://github.com/aartemmmm/task10/tree/demo/4-rebase). Итоговый лимит — 15, код совпал. |
+| 5. Staging и автоматизация | [Ручной запуск](https://github.com/aartemmmm/task10/actions/runs/44048296405), [проверка /health в логе](https://github.com/aartemmmm/task10/actions/runs/44048296405/job/133919678766), [Semgrep JSON](https://github.com/aartemmmm/task10/actions/runs/44048296405/artifacts/14312880875), [обработка Issue #18](https://github.com/aartemmmm/task10/actions/runs/44048239258), [milestone](https://github.com/aartemmmm/task10/milestone/1). |
+
+В ручном запуске сначала прошла проверка коммита `a28a2733acf6`, затем
+Docker-стенд вернул `{"status": "ok"}`. На компьютере стенд проверен по
+`http://127.0.0.1:18080/health`. Он ответил, а запрос с количеством 0 вернул
+HTTP 400. В GitHub Actions такой же адрес доступен только внутри runner.
+
+Срок автоматически записался в комментарий к Issue из даты milestone.
+Доступ, использованный для настройки репозитория, не включает права GitHub Projects,
+поэтому запись даты в поле Projects не запускалась. Вариант с Projects предусмотрен
+в workflow.
