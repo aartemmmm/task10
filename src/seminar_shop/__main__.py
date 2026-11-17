@@ -8,6 +8,25 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from .orders import order_total
 from .registration import validate_email
 
+ENDPOINTS = ("/health", "/register", "/orders/quote", "/orders/checkout")
+POST_ENDPOINTS = ENDPOINTS[1:]
+
+
+def order_data(data: dict[str, object]) -> dict[str, object]:
+    unit_price, quantity = data.get("unit_price"), data.get("quantity")
+    if type(unit_price) is not int or type(quantity) is not int:
+        raise ValueError("Price and quantity must be integers")
+    return {"total": order_total(unit_price, quantity)}
+
+
+def customer_email(data: dict[str, object]) -> str:
+    email = data.get("email")
+    if email is None:
+        raise ValueError("Email is required")
+    if not isinstance(email, str):
+        raise ValueError("Email must be a string")
+    return validate_email(email)
+
 
 class ShopHandler(BaseHTTPRequestHandler):
     def send_json(self, status: HTTPStatus, value: dict[str, object]) -> None:
@@ -24,13 +43,13 @@ class ShopHandler(BaseHTTPRequestHandler):
         elif self.path == "/":
             self.send_json(
                 HTTPStatus.OK,
-                {"service": "seminar-shop", "endpoints": ["/health", "/register", "/orders/quote"]},
+                {"service": "seminar-shop", "endpoints": ENDPOINTS},
             )
         else:
             self.send_json(HTTPStatus.NOT_FOUND, {"error": "Unknown endpoint"})
 
     def do_POST(self) -> None:
-        if self.path not in {"/register", "/orders/quote"}:
+        if self.path not in POST_ENDPOINTS:
             self.send_json(HTTPStatus.NOT_FOUND, {"error": "Unknown endpoint"})
             return
 
@@ -43,15 +62,11 @@ class ShopHandler(BaseHTTPRequestHandler):
                 raise ValueError("Expected a JSON object")
             result: dict[str, object]
             if self.path == "/register":
-                email = data.get("email")
-                if not isinstance(email, str):
-                    raise ValueError("Email must be a string")
-                result = {"email": validate_email(email)}
+                result = {"email": customer_email(data)}
             else:
-                unit_price, quantity = data.get("unit_price"), data.get("quantity")
-                if type(unit_price) is not int or type(quantity) is not int:
-                    raise ValueError("Price and quantity must be integers")
-                result = {"total": order_total(unit_price, quantity)}
+                result = order_data(data)
+                if self.path == "/orders/checkout":
+                    result["email"] = customer_email(data)
         except ValueError as error:
             self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
         else:
