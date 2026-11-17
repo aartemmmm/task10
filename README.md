@@ -31,3 +31,12 @@ curl -sS -H 'Content-Type: application/json' \
 ```sh
 python -m pytest tests/test_checkout.py -q
 ```
+
+## 2. Сборка и проверки
+
+Workflow **Shop CI** запускается для PR в `main` и после push в `main`. Теги
+публикуются отдельно. Build собирает wheel, Lint показывает вывод Ruff и mypy,
+Tests выполняет pytest, Package проверяет установку wheel и публикует
+`shop-package`. Тесты запускаются независимо от линтера. XML-отчёты
+`test-reports` загружаются и при падении тестов. Ключ кэша pip учитывает
+версию Python и файл зависимостей.
