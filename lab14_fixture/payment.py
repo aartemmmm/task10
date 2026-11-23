@@ -7,4 +7,5 @@ def charge(balance_cents: int, amount_cents: int) -> int:
         raise ValueError("Сумма должна быть положительной")
     if amount_cents > balance_cents:
         raise ValueError("Недостаточно средств")
-    return balance_cents - amount_cents
+    remaining_cents = balance_cents - amount_cents
+    return remaining_cents
