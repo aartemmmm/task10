@@ -2,7 +2,7 @@
 
 
 def charge(balance_cents: int, amount_cents: int) -> int:
-    """Списать положительную сумму, если средств достаточно."""
+    """Списать положительную сумму из баланса, если средств достаточно."""
     if amount_cents <= 0:
         raise ValueError("Сумма должна быть положительной")
     if amount_cents < balance_cents:
